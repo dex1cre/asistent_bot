@@ -3,9 +3,4 @@ days = ["понедельник","вторник","среда","четверг",
 numbers = ["/0","/1","/2","/3","/4","/5","/6"]
 
 wt = False
-wt2 = False
-wt3 = False
-number_day = 0
-description = ""
-d_start = 0
-d_stop = 0
+number = 0

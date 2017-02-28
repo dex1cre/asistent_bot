@@ -89,39 +89,54 @@ def mn():
         def repeat_all_messages(message):
             if "/" in message.text:
                 if message.text in config.numbers:
+                    config.number = config.numbers.index(message.text)
+                    stt = config.days[config.number]
+                    st = """
+Введите задание на """ + stt + """
+Сначала введите само задание
+Потом введите время начала задания
+Потом - время конца задания
+
+Каждый пункт нужно писать через Enter, то есть переностить на новую строчку!!!
+"""
                     config.wt = True
-                    config.number_day = config.numbers.index(message.text)
-                    stt = config.days[config.number_day]
-                    bot.send_message(message.from_user.id, "Введите задание! на " + stt)
+                    bot.send_message(message.from_user.id, st)
                 else:
                     bot.send_message(message.from_user.id, "not command")
             elif config.wt:
-                config.wt = False
-                config.wt2 = True
-                config.description = message.text
-                bot.send_message(message.from_user.id, "Введите время начала этого события:\nВведите час (пишется одной цифрой или числом)")
-            elif config.wt2:
-                config.wt2 = False
-                config.wt3 = True
-                print(int(message.text()))
-                try:
-                    config.d_start = int(message.text())
-                except:
-                    config.wt2 = True
-                    config.wt3 = False
-                    bot.send_message(message.from_user.id, "Не корректный ввод, введите заново")
+                stt = ""
+                x = []
+                in_n = 0
+                ms_text = message.text + "\n"
+                for i in ms_text:
+                    if i != "\n":
+                        stt = stt + i
+                    else:
+                        in_n += 1
+                        x.append(stt)
+                        stt = ""
+                if in_n < 3:
+                    bot.send_message(message.from_user.id, "Вы что-то ввели не так, попробуйте ещё раз")
                 else:
-                    bot.send_message(message.from_user.id, "Теперь введите время окончания")
-            elif config.wt3:
-                config.wt3 = False
-                try:
-                    config.d_stop = int(message.text())
-                except:
-                    config.wt2 = True
-                    config.wt3 = False
-                    bot.send_message(message.from_user.id, "Не корректный ввод, введите заново")
-                else:
-                    bot.send_message(message.from_user.id, "Ваше задание принято")
+                    con = sqlite3.connect("st.db")
+                    cur = con.cursor()
+                    sql = "SELECT * FROM users WHERE id_user=" + str(message.from_user.id)
+                    t = con.execute(sql)
+                    t = t.fetchone()
+                    id = t[0]
+                    print(config.number)
+                    t = (x[0], id, x[1], x[2], config.number)
+                    sql = "INSERT INTO plans(what, id_user, dtime_start, dtime_stop, id_day) VALUES(?,?,?,?,?)"
+                    cur.execute(sql, t)
+                    con.commit()
+                    cur.close()
+                    con.close()
+                    config.number = 0
+                    config.wt = False
+                    stt = "Ваше задание: " + x[0] + "\nНачало работы " + x[1] + "\nКонец работы: " + x[2] + "\nЗадание записано!"
+                    bot.send_message(message.from_user.id, stt)
+            else:
+                bot.send_message(message.from_user.id, "Я пока что не могу отвечать на подобные вопросы! Простите")
 
 
     except:
