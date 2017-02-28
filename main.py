@@ -69,7 +69,21 @@ def mn():
         @bot.message_handler(commands=["now"])
         def send_to_now(message):
             n = datetime.weekday(datetime.now())
-            bot.send_message(message.from_user.id, n)
+            con = sqlite3.connect("st.db")
+            cur = con.cursor()
+            sql = "SELECT * FROM users WHERE id_user="+ str(message.from_user.id)
+            id = cur.execute(sql).fetchone()[0]
+            cur.close()
+
+            cur = con.cursor()
+            sql = "SELECT * FROM plans WHERE id_user=" + str(id) + " AND id_day=" + str(n)
+            cur.execute(sql)
+            st = ""
+            for i in cur.fetchall():
+                st = st + "\nЗадание: " + str(i[1]) + "\nВремя выполнения: " + str(i[3]) + "-" + str(i[4]) + "\n"
+            cur.close()
+            con.close()
+            bot.send_message(message.from_user.id, st)
         #команда для создания новых задач
         @bot.message_handler(commands=["new"])
         def send_to_new(message):
