@@ -4,3 +4,4 @@ numbers = ["/0","/1","/2","/3","/4","/5","/6"]
 
 wt = False
 number = 0
+url = "/home/pi/projects/asistent_bot/st.db" 

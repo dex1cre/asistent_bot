@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+#!usr/bin python3
 #-*- coding: utf-8 -*-
 
 #главный(здесь) модуль для работы с telegram
@@ -15,7 +16,7 @@ import config
 bot = tlb.TeleBot(config.token)
 
 def pr_mn(tk):
-    con = sqlite3.connect("st.db")
+    con = sqlite3.connect(config.url)
     cur = con.cursor()
     sql = "SELECT * FROM users WHERE id_user=" + str(tk)
     try:
@@ -41,7 +42,7 @@ def mn():
                 print(message.from_user.id, "перезапустил сессию")
             else:
                 print(message.from_user.id, "создал первую сессию")
-                con = sqlite3.connect("st.db")
+                con = sqlite3.connect(config.url)
                 cur = con.cursor()
                 sql = "INSERT INTO users(id_user) VALUES('" + str(message.from_user.id) + "')"
                 try:
@@ -70,7 +71,7 @@ def mn():
         @bot.message_handler(commands=["now"])
         def send_to_now(message):
             n = datetime.weekday(datetime.now())
-            con = sqlite3.connect("st.db")
+            con = sqlite3.connect(config.url)
             cur = con.cursor()
             sql = "SELECT * FROM users WHERE id_user="+ str(message.from_user.id)
             id = cur.execute(sql).fetchone()[0]
@@ -133,7 +134,7 @@ def mn():
                 if in_n < 3:
                     bot.send_message(message.from_user.id, "Вы что-то ввели не так, попробуйте ещё раз")
                 else:
-                    con = sqlite3.connect("st.db")
+                    con = sqlite3.connect(config.url)
                     cur = con.cursor()
                     sql = "SELECT * FROM users WHERE id_user=" + str(message.from_user.id)
                     t = con.execute(sql)
