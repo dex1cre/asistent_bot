@@ -12,6 +12,8 @@ import threading as potok
 import sqlite3
 #модуль с основными константами
 import config
+#constant
+import string
 
 bot = tlb.TeleBot(config.token)
 
@@ -35,9 +37,43 @@ def pr_mn(tk):
     con.close()
 
 def plans(text):
+    first = 0
+    second = 0
     text = text[::-1]
-    return text
-
+    #first symbol is number?
+    try:
+        first = int(text[0])
+    except:
+        return False
+    else:
+        #try to get second number
+        st = ""
+        for i in text:
+            try:
+                g = int(i)
+            except:
+                if i == "\n":
+                    second = int(st[::-1])
+                    st = ""
+                    ind = text.index(i) + 1
+                    for i in range(ind, len(text)):
+                        try:
+                            g = int(text[i])
+                        except:
+                            if st != "":
+                                first = int(st[::-1])
+                                return (first, second)
+                            else:
+                                return False
+                        else:
+                            print(text[i])
+                            st = st + text[i]
+                else:
+                    return False
+            else:
+                print("hello")
+                st = st + i
+                            
 def mn():
     try:
         @bot.message_handler(commands=["start"])
@@ -67,6 +103,7 @@ def mn():
         #Завершение сессии
         @bot.message_handler(commands=["stop"])
         def send_to_stop(message):
+            config.wt = False
             hm = tlb.types.ReplyKeyboardRemove()
             bot.send_message(message.from_user.id, "До встречи!", reply_markup=hm)
 
@@ -84,25 +121,45 @@ def mn():
             print("The user with id: " + str(message.from_user.id) + " use the command NEW")
             st = "Чтобы добавить новые задачи напишите номер дня недели от 1 до 7"
             bot.send_message(message.from_user.id, st)
-        #text with commands
-        @bot.message_handler(content_types=["text"])
-        def send_to_text(message):
-            try:
-                numb = int(message.text)
-            except:
-                if config.wt:
-                    print(plans(message.text)
-                else:
-                    bot.send_message(message.from_user.id, "Nope, 1 2 3 4 5 6 7")
-            else:
-                config.number(numb)
-                bot.send_message(message.from_user.id, "Вы выбрали " + config.days[numb-1])
+
         #stop plans
-        @bot.message_handler(commands=["stop"])
+        @bot.message_handler(commands=["snew"])
         def send_to_stop(message):
             print("The user with id: " + str(message.from_user.id) + " use the command SNEW")
             config.wt = False
             bot.send_message(message.from_user.id, "Вы закончили писать задания,\n вы молодец!")
+        
+        #text with commands
+        @bot.message_handler(content_types=["text"])
+        def send_to_text(message):
+            if config.wt and message.text in config.numbers:
+                config.number = int(message.text)
+                bot.send_message(message.from_user.id, "Вы выбрали " + config.days[int(message.text)-1])
+            elif config.wt:
+                bl = plans(message.text)
+                tp = type(bl)
+                if tp == tuple:
+                    idd = message.from_user.id
+                    text = message.text
+                    start = bl[1]
+                    stop = bl[2]
+                    ms = text[:len(text)-3]
+                    con = sqlite3.connect(config.url)
+                    cur = con.cursor()
+                    number = config.number-1
+                    st = (ms, idd, start, stop, number)
+                    sql = "INSERT INTO plans(what, id_user, dtime_start, dtime_stop, id_day) VALUES(?, ?, ?, ?, ?)"
+                    try:
+                        cur.execute(sql, st)
+                    except sqlite3.DatabaseError as err:
+                        print(err)
+                    else:
+                        con.commit()
+                        bot.send_message(message.from_user.id, "Ваше задание:\n" + ms + "\nзагружено!")
+                elif tp == bool and not bl:
+                    bot.send_message(message.from_user.id, "Что-то с вашим заданием не так! Проверьте, правильно ли вы вводите время начала и конца!")
+            else:
+                bot.send_message(message.from_user.id, "Nope, 1 2 3 4 5 6 7")
             
 	
     except:
