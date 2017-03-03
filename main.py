@@ -34,6 +34,10 @@ def pr_mn(tk):
     cur.close()
     con.close()
 
+def plans(text):
+    text = text[::-1]
+    return text
+
 def mn():
     try:
         @bot.message_handler(commands=["start"])
@@ -57,7 +61,7 @@ def mn():
 
             um = tlb.types.ReplyKeyboardMarkup(True)
             um.row("/start", "/now", "/stop")
-            um.row("/new", "/today", "/week")
+            um.row("/new", "/snew", "/week")
             bot.send_message(message.from_user.id, "Начнём!", reply_markup=um)
 
         #Завершение сессии
@@ -66,95 +70,41 @@ def mn():
             hm = tlb.types.ReplyKeyboardRemove()
             bot.send_message(message.from_user.id, "До встречи!", reply_markup=hm)
 
-        #Другие команды
-        #команда для просмотра задачи в данный момент времени
+        #what's now?
         @bot.message_handler(commands=["now"])
-        def send_to_now(message):
-            n = datetime.weekday(datetime.now())
-            con = sqlite3.connect(config.url)
-            cur = con.cursor()
-            sql = "SELECT * FROM users WHERE id_user="+ str(message.from_user.id)
-            id = cur.execute(sql).fetchone()[0]
-            cur.close()
+        def send_to_stop(message):
+            print("The user with id: " + str(message.from_user.id) + " use the command NOW")
+            hm = tlb.types.ReplyKeyboardRemove()
+            bot.send_message(message.from_user.id, "Now hello")
 
-            cur = con.cursor()
-            sql = "SELECT * FROM plans WHERE id_user=" + str(id) + " AND id_day=" + str(n)
-            cur.execute(sql)
-            st = ""
-            for i in cur.fetchall():
-                st = st + "\nЗадание: " + str(i[1]) + "\nВремя выполнения: " + str(i[3]) + "-" + str(i[4]) + "\n"
-            cur.close()
-            con.close()
-            bot.send_message(message.from_user.id, st)
-        #команда для создания новых задач
+        #new
         @bot.message_handler(commands=["new"])
         def send_to_new(message):
-            st = """
-Выберите день недели\n
-/0 - понедельник
-/1 - вторник
-/2 - среда
-/3 - четверг
-/4 - пятница
-/5 - суббота
-/6 - воскресенье
-"""
+            config.wt = True
+            print("The user with id: " + str(message.from_user.id) + " use the command NEW")
+            st = "Чтобы добавить новые задачи напишите номер дня недели от 1 до 7"
             bot.send_message(message.from_user.id, st)
-        #команда для обработки дней недели
-        @bot.message_handler(content_types=['text'])
-        def repeat_all_messages(message):
-            if "/" in message.text:
-                if message.text in config.numbers:
-                    config.number = config.numbers.index(message.text)
-                    stt = config.days[config.number]
-                    st = """
-Введите задание на """ + stt + """
-Сначала введите само задание
-Потом введите время начала задания
-Потом - время конца задания
-
-Каждый пункт нужно писать через Enter, то есть переностить на новую строчку!!!
-"""
-                    config.wt = True
-                    bot.send_message(message.from_user.id, st)
+        #text with commands
+        @bot.message_handler(content_types=["text"])
+        def send_to_text(message):
+            try:
+                numb = int(message.text)
+            except:
+                if config.wt:
+                    print(plans(message.text)
                 else:
-                    bot.send_message(message.from_user.id, "not command")
-            elif config.wt:
-                stt = ""
-                x = []
-                in_n = 0
-                ms_text = message.text + "\n"
-                for i in ms_text:
-                    if i != "\n":
-                        stt = stt + i
-                    else:
-                        in_n += 1
-                        x.append(stt)
-                        stt = ""
-                if in_n < 3:
-                    bot.send_message(message.from_user.id, "Вы что-то ввели не так, попробуйте ещё раз")
-                else:
-                    con = sqlite3.connect(config.url)
-                    cur = con.cursor()
-                    sql = "SELECT * FROM users WHERE id_user=" + str(message.from_user.id)
-                    t = con.execute(sql)
-                    t = t.fetchone()
-                    id = t[0]
-                    print(config.number)
-                    t = (x[0], id, x[1], x[2], config.number)
-                    sql = "INSERT INTO plans(what, id_user, dtime_start, dtime_stop, id_day) VALUES(?,?,?,?,?)"
-                    cur.execute(sql, t)
-                    con.commit()
-                    cur.close()
-                    con.close()
-                    config.number = 0
-                    config.wt = False
-                    stt = "Ваше задание: " + x[0] + "\nНачало работы " + x[1] + "\nКонец работы: " + x[2] + "\nЗадание записано!"
-                    bot.send_message(message.from_user.id, stt)
+                    bot.send_message(message.from_user.id, "Nope, 1 2 3 4 5 6 7")
             else:
-                bot.send_message(message.from_user.id, "Я пока что не могу отвечать на подобные вопросы! Простите")
-
-
+                config.number(numb)
+                bot.send_message(message.from_user.id, "Вы выбрали " + config.days[numb-1])
+        #stop plans
+        @bot.message_handler(commands=["stop"])
+        def send_to_stop(message):
+            print("The user with id: " + str(message.from_user.id) + " use the command SNEW")
+            config.wt = False
+            bot.send_message(message.from_user.id, "Вы закончили писать задания,\n вы молодец!")
+            
+	
     except:
         print("Warning!")
 
