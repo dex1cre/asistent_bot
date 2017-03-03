@@ -141,8 +141,8 @@ def mn():
                 if tp == tuple:
                     idd = message.from_user.id
                     text = message.text
-                    start = bl[1]
-                    stop = bl[2]
+                    start = bl[0]
+                    stop = bl[1]
                     ms = text[:len(text)-3]
                     con = sqlite3.connect(config.url)
                     cur = con.cursor()
