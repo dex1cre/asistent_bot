@@ -14,6 +14,8 @@ import sqlite3
 import config
 #constant
 import string
+#for pause
+import time
 
 bot = tlb.TeleBot(config.token)
 
@@ -111,8 +113,23 @@ def mn():
         @bot.message_handler(commands=["now"])
         def send_to_stop(message):
             print("The user with id: " + str(message.from_user.id) + " use the command NOW")
-            hm = tlb.types.ReplyKeyboardRemove()
-            bot.send_message(message.from_user.id, "Now hello")
+            idd = message.from_user.id
+            now = datetime.now()
+            id_day = now.weekday()
+            sql = "SELECT * FROM plans WHERE id_user=" + str(idd) + " AND id_day=" + str(now)
+            con = sqlite3.connect(config.url)
+            cur = con.cursor()
+            try:
+                t = con.execute(sql).fetchall()
+            except:
+                bot.send_message(message.from_user.id, "some Error, ssory =)\nnow is " + str(id_day+1))
+            else:
+                st = ""
+                for i in t:
+                    st = str(i[1]) + "\n" + str(i[3]) + "\n" + str(i[4]) + "\n\n"
+                bot.send_message(message.from_user.id, st)
+            cur.close()
+            con.close()
 
         #new
         @bot.message_handler(commands=["new"])
@@ -134,7 +151,7 @@ def mn():
         def send_to_text(message):
             if config.wt and message.text in config.numbers:
                 config.number = int(message.text)
-                bot.send_message(message.from_user.id, "Вы выбрали " + config.days[int(message.text)-1])
+                bot.send_message(message.from_user.id, "Вы выбрали " + config.days[int(message.text)-1] + config.write_plans)
             elif config.wt:
                 bl = plans(message.text)
                 tp = type(bl)
@@ -155,7 +172,7 @@ def mn():
                         print(err)
                     else:
                         con.commit()
-                        bot.send_message(message.from_user.id, "Ваше задание:\n" + ms + "\nзагружено!")
+                        bot.send_message(message.from_user.id, config.write_more)
                 elif tp == bool and not bl:
                     bot.send_message(message.from_user.id, "Что-то с вашим заданием не так! Проверьте, правильно ли вы вводите время начала и конца!")
             else:
@@ -165,8 +182,34 @@ def mn():
     except:
         print("Warning!")
 
+#clear plans
+def clear_plans():
+    now = datetime.now()
+    while True:
+        if config.date_number == now.weekday() - 1:
+            config.date_number = now.weekday()
+            con = sqlite3.connect(config.url)
+            sql = "SELECT * FROM users"
+            t = cur.execute(t).fetchall()
+            for i in t:
+                bot.send_message(i[1], "Через минуту будет произведена отчистка данных прошлой недели, \nпожалуйста не вводите новых данных, иначе они будут утеряны")
+            time.sleep(60)
+            cur = con.cursor()
+            sql = "DELETE FROM plans"
+            cur.execute(sql)
+            con.commit()
+            cur.close()
+            con.close()
+            print("plans are cleared")
+        time.sleep(60)
+
 t1 = potok.Thread(target=mn)
+t2 = potok.Thread(target=clear_plans)
+
 t1.daemon = True
+t2.daemon = True
+
 t1.start()
+t2.start()
 
 bot.polling(none_stop=True, interval=0)
