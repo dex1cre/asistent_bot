@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#!usr/bin python3
+
 #-*- coding: utf-8 -*-
 
 #главный(здесь) модуль для работы с telegram
@@ -64,16 +64,14 @@ def plans(text):
                         except:
                             if st != "":
                                 first = int(st[::-1])
-                                return (first, second)
+                                return (first, second, -1 * i)
                             else:
                                 return False
                         else:
-                            print(text[i])
                             st = st + text[i]
                 else:
                     return False
             else:
-                print("hello")
                 st = st + i
                             
 def mn():
@@ -116,17 +114,19 @@ def mn():
             idd = message.from_user.id
             now = datetime.now()
             id_day = now.weekday()
-            sql = "SELECT * FROM plans WHERE id_user=" + str(idd) + " AND id_day=" + str(now)
+            print(id_day)
+            sql = "SELECT * FROM plans WHERE id_user=" + str(idd) + " AND id_day=" + str(id_day)
             con = sqlite3.connect(config.url)
             cur = con.cursor()
             try:
                 t = con.execute(sql).fetchall()
-            except:
+            except sqlite3.DatabaseError as err:
+                print(err)
                 bot.send_message(message.from_user.id, "some Error, ssory =)\nnow is " + str(id_day+1))
             else:
                 st = ""
                 for i in t:
-                    st = str(i[1]) + "\n" + str(i[3]) + "\n" + str(i[4]) + "\n\n"
+                    st = st + str(i[1]) + "time start: " + str(i[3]) + "\ntime stop: " + str(i[4]) + "\n---------------\n"
                 bot.send_message(message.from_user.id, st)
             cur.close()
             con.close()
@@ -149,6 +149,7 @@ def mn():
         #text with commands
         @bot.message_handler(content_types=["text"])
         def send_to_text(message):
+            print(config.number)
             if config.wt and message.text in config.numbers:
                 config.number = int(message.text)
                 bot.send_message(message.from_user.id, "Вы выбрали " + config.days[int(message.text)-1] + config.write_plans)
@@ -160,7 +161,7 @@ def mn():
                     text = message.text
                     start = bl[0]
                     stop = bl[1]
-                    ms = text[:len(text)-3]
+                    ms = text[:bl[2]]
                     con = sqlite3.connect(config.url)
                     cur = con.cursor()
                     number = config.number-1
@@ -172,6 +173,7 @@ def mn():
                         print(err)
                     else:
                         con.commit()
+                        print(ms)
                         bot.send_message(message.from_user.id, config.write_more)
                 elif tp == bool and not bl:
                     bot.send_message(message.from_user.id, "Что-то с вашим заданием не так! Проверьте, правильно ли вы вводите время начала и конца!")
@@ -185,9 +187,12 @@ def mn():
 #clear plans
 def clear_plans():
     now = datetime.now()
+    day = now.weekday()
     while True:
-        if config.date_number == now.weekday() - 1:
-            config.date_number = now.weekday()
+        if day == 6 and not config.week_none:
+            config.week_none = True
+        if day == 0 and config.week_none:
+            config.week_none = False
             con = sqlite3.connect(config.url)
             sql = "SELECT * FROM users"
             t = cur.execute(t).fetchall()
